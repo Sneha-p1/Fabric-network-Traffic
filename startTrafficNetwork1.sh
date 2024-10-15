@@ -22,38 +22,38 @@ echo "-------------Generate the genesis block—-------------------------------"
 
 export FABRIC_CFG_PATH=${PWD}/config
 
-export CHANNEL_NAME=votingchannel
+export CHANNEL_NAME=mychannel
 
 configtxgen -profile ChannelUsingRaft -outputBlock ${PWD}/channel-artifacts/${CHANNEL_NAME}.block -channelID $CHANNEL_NAME
 
 echo "------ Create the application channel------"
 
-export ORDERER_CA=${PWD}/organizations/ordererOrganizations/voting.com/orderers/orderer.voting.com/msp/tlscacerts/tlsca.voting.com-cert.pem
+export ORDERER_CA=./organizations/ordererOrganizations/traffic.com/orderers/orderer.traffic.com/msp/tlscacerts/tlsca.traffic.com-cert.pem
 
-export ORDERER_ADMIN_TLS_SIGN_CERT=${PWD}/organizations/ordererOrganizations/voting.com/orderers/orderer.voting.com/tls/server.crt
+export ORDERER_ADMIN_TLS_SIGN_CERT=./organizations/ordererOrganizations/traffic.com/orderers/orderer.traffic.com/tls/server.crt
 
-export ORDERER_ADMIN_TLS_PRIVATE_KEY=${PWD}/organizations/ordererOrganizations/voting.com/orderers/orderer.voting.com/tls/server.key
+export ORDERER_ADMIN_TLS_PRIVATE_KEY=./organizations/ordererOrganizations/traffic.com/orderers/orderer.traffic.com/tls/server.key
 
-osnadmin channel join --channelID $CHANNEL_NAME --config-block ${PWD}/channel-artifacts/$CHANNEL_NAME.block -o localhost:7053 --ca-file $ORDERER_CA --client-cert $ORDERER_ADMIN_TLS_SIGN_CERT --client-key $ORDERER_ADMIN_TLS_PRIVATE_KEY
+osnadmin channel join --channelID $CHANNEL_NAME --config-block ./channel-artifacts/$CHANNEL_NAME.block -o localhost:7053 --ca-file $ORDERER_CA --client-cert $ORDERER_ADMIN_TLS_SIGN_CERT --client-key $ORDERER_ADMIN_TLS_PRIVATE_KEY
 sleep 2
 osnadmin channel list -o localhost:7053 --ca-file $ORDERER_CA --client-cert $ORDERER_ADMIN_TLS_SIGN_CERT --client-key $ORDERER_ADMIN_TLS_PRIVATE_KEY
 sleep 2
 
-export FABRIC_CFG_PATH=${PWD}/peercfg
-export voters_PEER_TLSROOTCERT=${PWD}/organizations/peerOrganizations/voters.voting.com/peers/peer0.voters.voting.com/tls/ca.crt
-export commissioner_PEER_TLSROOTCERT=${PWD}/organizations/peerOrganizations/commissioner.voting.com/peers/peer0.commissioner.voting.com/tls/ca.crt
-export auditor_PEER_TLSROOTCERT=${PWD}/organizations/peerOrganizations/auditor.voting.com/peers/peer0.auditor.voting.com/tls/ca.crt
-export candidate_PEER_TLSROOTCERT=${PWD}/organizations/peerOrganizations/candidate.voting.com/peers/peer0.candidate.voting.com/tls/ca.crt
+export FABRIC_CFG_PATH=./peercfg
+export TRAFFICMANAGEMENT_PEER_TLSROOTCERT=${PWD}/organizations/peerOrganizations/trafficManagement.traffic.com/peers/peer0.trafficManagement.traffic.com/tls/ca.crt
+export INSURANCECOMPANY_PEER_TLSROOTCERT=${PWD}/organizations/peerOrganizations/insuranceCompany.traffic.com/peers/peer0.insuranceCompany.traffic.com/tls/ca.crt
+export VEHICLEMANUFACTURES_PEER_TLSROOTCERT=${PWD}/organizations/peerOrganizations/vehicleManufacturers.traffic.com/peers/peer0.vehicleManufacturers.traffic.com/tls/ca.crt
+export LAWENFORCEMENT_PEER_TLSROOTCERT=${PWD}/organizations/peerOrganizations/lawEnforcement.traffic.com/peers/peer0.lawEnforcement.traffic.com/tls/ca.crt
 
 
 export CORE_PEER_TLS_ENABLED=true
-export CORE_PEER_LOCALMSPID=votersMSP
-export CORE_PEER_TLS_ROOTCERT_FILE=${PWD}/organizations/peerOrganizations/voters.voting.com/peers/peer0.voters.voting.com/tls/ca.crt
-export CORE_PEER_MSPCONFIGPATH=${PWD}/organizations/peerOrganizations/voters.voting.com/users/Admin@voters.voting.com/msp
+export CORE_PEER_LOCALMSPID=TrafficManagementMSP
+export CORE_PEER_TLS_ROOTCERT_FILE=${PWD}/organizations/peerOrganizations/trafficManagement.traffic.com/peers/peer0.trafficManagement.traffic.com/tls/ca.crt
+export CORE_PEER_MSPCONFIGPATH=${PWD}/organizations/peerOrganizations/trafficManagement.traffic.com/users/Admin@trafficManagement.traffic.com/msp
 export CORE_PEER_ADDRESS=localhost:7051
 sleep 2
 
-echo "—---------------Join voters peer to the channel—-------------"
+echo "—---------------Join manufacturer peer to the channel—-------------"
 
 echo ${FABRIC_CFG_PATH}
 sleep 2
@@ -63,20 +63,19 @@ sleep 3
 echo "-----channel List----"
 peer channel list
 
-echo "—-------------voters anchor peer update—-----------"
+echo "—-------------manufacturer anchor peer update—-----------"
 
 
-peer channel fetch config ${PWD}/channel-artifacts/config_block.pb -o localhost:7050 --ordererTLSHostnameOverride orderer.voting.com -c $CHANNEL_NAME --tls --cafile $ORDERER_CA
+peer channel fetch config channel-artifacts/config_block.pb -o localhost:7050 --ordererTLSHostnameOverride orderer.traffic.com -c $CHANNEL_NAME --tls --cafile $ORDERER_CA
 sleep 1
 
 cd channel-artifacts
 
 configtxlator proto_decode --input config_block.pb --type common.Block --output config_block.json
 jq '.data.data[0].payload.data.config' config_block.json > config.json
-
 cp config.json config_copy.json
 
-jq '.channel_group.groups.Application.groups.votersMSP.values += {"AnchorPeers":{"mod_policy": "Admins","value":{"anchor_peers": [{"host": "peer0.voters.voting.com","port": 7051}]},"version": "0"}}' config_copy.json > modified_config.json
+jq '.channel_group.groups.Application.groups.TrafficManagementMSP.values += {"AnchorPeers":{"mod_policy": "Admins","value":{"anchor_peers": [{"host": "peer0.trafficManagement.traffic.com","port": 7051}]},"version": "0"}}' config_copy.json > modified_config.json
 
 configtxlator proto_encode --input config.json --type common.Config --output config.pb
 configtxlator proto_encode --input modified_config.json --type common.Config --output modified_config.pb
@@ -85,10 +84,9 @@ configtxlator compute_update --channel_id ${CHANNEL_NAME} --original config.pb -
 configtxlator proto_decode --input config_update.pb --type common.ConfigUpdate --output config_update.json
 echo '{"payload":{"header":{"channel_header":{"channel_id":"'$CHANNEL_NAME'", "type":2}},"data":{"config_update":'$(cat config_update.json)'}}}' | jq . > config_update_in_envelope.json
 configtxlator proto_encode --input config_update_in_envelope.json --type common.Envelope --output config_update_in_envelope.pb
-
 cd ..
 
-peer channel update -f ${PWD}/channel-artifacts/config_update_in_envelope.pb -c $CHANNEL_NAME -o localhost:7050  --ordererTLSHostnameOverride orderer.voting.com --tls --cafile $ORDERER_CA
+peer channel update -f channel-artifacts/config_update_in_envelope.pb -c $CHANNEL_NAME -o localhost:7050  --ordererTLSHostnameOverride orderer.traffic.com --tls --cafile $ORDERER_CA
 sleep 1
 
 # echo "—---------------package chaincode—-------------"
@@ -103,34 +101,34 @@ sleep 1
 
 # export CC_PACKAGE_ID=$(peer lifecycle chaincode calculatepackageid basic.tar.gz)
 
-# echo "—---------------install chaincode in voters peer—-------------"
+# echo "—---------------install chaincode in manufacturer peer—-------------"
 
 # peer lifecycle chaincode install basic.tar.gz
 # sleep 3
 
 # peer lifecycle chaincode queryinstalled
 
-# echo "—---------------Approve chaincode in voters peer—-------------"
+# echo "—---------------Approve chaincode in manufacturer peer—-------------"
 
-# peer lifecycle chaincode approveformyorg -o localhost:7050 --ordererTLSHostnameOverride orderer.voting.com --channelID $CHANNEL_NAME --name basic --version 1.0 --package-id $CC_PACKAGE_ID --sequence 1 --tls --cafile $ORDERER_CA --waitForEvent
+# peer lifecycle chaincode approveformyorg -o localhost:7050 --ordererTLSHostnameOverride orderer.agri.com --channelID $CHANNEL_NAME --name basic --version 1.0 --package-id $CC_PACKAGE_ID --sequence 1 --tls --cafile $ORDERER_CA --waitForEvent
 sleep 1
 
-export CORE_PEER_LOCALMSPID=commissionerMSP
+export CORE_PEER_LOCALMSPID=verifierMSP
 export CORE_PEER_TLS_ENABLED=true
-export CORE_PEER_TLS_ROOTCERT_FILE=${PWD}/organizations/peerOrganizations/commissioner.voting.com/peers/peer0.commissioner.voting.com/tls/ca.crt
-export CORE_PEER_MSPCONFIGPATH=${PWD}/organizations/peerOrganizations/commissioner.voting.com/users/Admin@commissioner.voting.com/msp
+export CORE_PEER_TLS_ROOTCERT_FILE=${PWD}/organizations/peerOrganizations/verifier.agri.com/peers/peer0.verifier.agri.com/tls/ca.crt
+export CORE_PEER_MSPCONFIGPATH=${PWD}/organizations/peerOrganizations/verifier.agri.com/users/Admin@verifier.agri.com/msp
 export CORE_PEER_ADDRESS=localhost:8051
 
-echo "—---------------Join commissioner peer0 to the channel—-------------"
+echo "—---------------Join verifier peer0 to the channel—-------------"
 
 peer channel join -b ${PWD}/channel-artifacts/$CHANNEL_NAME.block
 sleep 1
 peer channel list
 
-echo "—-------------commissioner anchor peer update—-----------"
+echo "—-------------verifier anchor peer update—-----------"
 
 
-peer channel fetch config ${PWD}/channel-artifacts/config_block.pb -o localhost:7050 --ordererTLSHostnameOverride orderer.voting.com -c $CHANNEL_NAME --tls --cafile $ORDERER_CA
+peer channel fetch config ${PWD}/channel-artifacts/config_block.pb -o localhost:7050 --ordererTLSHostnameOverride orderer.agri.com -c $CHANNEL_NAME --tls --cafile $ORDERER_CA
 sleep 1
 
 cd channel-artifacts
@@ -140,7 +138,7 @@ jq '.data.data[0].payload.data.config' config_block.json > config.json
 
 cp config.json config_copy.json
 
-jq '.channel_group.groups.Application.groups.commissionerMSP.values += {"AnchorPeers":{"mod_policy": "Admins","value":{"anchor_peers": [{"host": "peer0.commissioner.voting.com","port": 8051}]},"version": "0"}}' config_copy.json > modified_config.json
+jq '.channel_group.groups.Application.groups.verifierMSP.values += {"AnchorPeers":{"mod_policy": "Admins","value":{"anchor_peers": [{"host": "peer0.verifier.agri.com","port": 8051}]},"version": "0"}}' config_copy.json > modified_config.json
 
 configtxlator proto_encode --input config.json --type common.Config --output config.pb
 configtxlator proto_encode --input modified_config.json --type common.Config --output modified_config.pb
@@ -152,28 +150,28 @@ configtxlator proto_encode --input config_update_in_envelope.json --type common.
 
 cd ..
 
-peer channel update -f ${PWD}/channel-artifacts/config_update_in_envelope.pb -c $CHANNEL_NAME -o localhost:7050  --ordererTLSHostnameOverride orderer.voting.com --tls --cafile $ORDERER_CA
+peer channel update -f ${PWD}/channel-artifacts/config_update_in_envelope.pb -c $CHANNEL_NAME -o localhost:7050  --ordererTLSHostnameOverride orderer.agri.com --tls --cafile $ORDERER_CA
 peer channel getinfo -c $CHANNEL_NAME
 sleep 1
 
 
 
-export CORE_PEER_LOCALMSPID=auditorMSP 
+export CORE_PEER_LOCALMSPID=dealerMSP 
 export CORE_PEER_ADDRESS=localhost:9051 
-export CORE_PEER_TLS_ROOTCERT_FILE=${PWD}/organizations/peerOrganizations/auditor.voting.com/peers/peer0.auditor.voting.com/tls/ca.crt
-export CORE_PEER_MSPCONFIGPATH=${PWD}/organizations/peerOrganizations/auditor.voting.com/users/Admin@auditor.voting.com/msp
+export CORE_PEER_TLS_ROOTCERT_FILE=${PWD}/organizations/peerOrganizations/dealer.agri.com/peers/peer0.dealer.agri.com/tls/ca.crt
+export CORE_PEER_MSPCONFIGPATH=${PWD}/organizations/peerOrganizations/dealer.agri.com/users/Admin@dealer.agri.com/msp
 
-echo "—---------------Join auditor peer0 to the channel—-------------"
+echo "—---------------Join dealer peer0 to the channel—-------------"
 
 peer channel join -b ${PWD}/channel-artifacts/$CHANNEL_NAME.block
 sleep 1
 peer channel list
 
-echo "—-------------auditor anchor peer update—-----------"
+echo "—-------------dealer anchor peer update—-----------"
 
 # peer channel join -b ${PWD}/channel-artifacts/$CHANNEL_NAME.block --tls --cafile $ORDERER_CA
 
-peer channel fetch config ${PWD}/channel-artifacts/config_block.pb -o localhost:7050 --ordererTLSHostnameOverride orderer.voting.com -c $CHANNEL_NAME --tls --cafile $ORDERER_CA
+peer channel fetch config ${PWD}/channel-artifacts/config_block.pb -o localhost:7050 --ordererTLSHostnameOverride orderer.agri.com -c $CHANNEL_NAME --tls --cafile $ORDERER_CA
 sleep 1
 
 cd channel-artifacts
@@ -183,7 +181,7 @@ jq '.data.data[0].payload.data.config' config_block.json > config.json
 
 cp config.json config_copy.json
 
-jq '.channel_group.groups.Application.groups.auditorMSP.values += {"AnchorPeers":{"mod_policy": "Admins","value":{"anchor_peers": [{"host": "peer0.auditor.voting.com","port": 9051}]},"version": "0"}}' config_copy.json > modified_config.json
+jq '.channel_group.groups.Application.groups.dealerMSP.values += {"AnchorPeers":{"mod_policy": "Admins","value":{"anchor_peers": [{"host": "peer0.dealer.agri.com","port": 9051}]},"version": "0"}}' config_copy.json > modified_config.json
 
 configtxlator proto_encode --input config.json --type common.Config --output config.pb
 configtxlator proto_encode --input modified_config.json --type common.Config --output modified_config.pb
@@ -195,14 +193,15 @@ configtxlator proto_encode --input config_update_in_envelope.json --type common.
 
 cd ..
 
-peer channel update -f ${PWD}/channel-artifacts/config_update_in_envelope.pb -c $CHANNEL_NAME -o localhost:7050  --ordererTLSHostnameOverride orderer.voting.com --tls --cafile $ORDERER_CA
+peer channel update -f ${PWD}/channel-artifacts/config_update_in_envelope.pb -c $CHANNEL_NAME -o localhost:7050  --ordererTLSHostnameOverride orderer.agri.com --tls --cafile $ORDERER_CA
 sleep 2
 
-echo "—---------------Join auditor peer1 to the channel—-------------"
-export CORE_PEER_LOCALMSPID=auditorMSP 
-export CORE_PEER_ADDRESS=localhost:9053 
-export CORE_PEER_TLS_ROOTCERT_FILE=${PWD}/organizations/peerOrganizations/auditor.voting.com/peers/peer1.auditor.voting.com/tls/ca.crt
-export CORE_PEER_MSPCONFIGPATH=${PWD}/organizations/peerOrganizations/auditor.voting.com/users/Admin@auditor.voting.com/msp
+echo "—---------------Join dealer peer1 to the channel—-------------"
+
+export CORE_PEER_LOCALMSPID=dealerMSP 
+export CORE_PEER_ADDRESS=localhost:9053
+export CORE_PEER_TLS_ROOTCERT_FILE=${PWD}/organizations/peerOrganizations/dealer.agri.com/peers/peer1.dealer.agri.com/tls/ca.crt
+export CORE_PEER_MSPCONFIGPATH=${PWD}/organizations/peerOrganizations/dealer.agri.com/users/Admin@dealer.agri.com/msp
 
 echo ${FABRIC_CFG_PATH}
 sleep 2
@@ -212,34 +211,34 @@ sleep 3
 echo "-----channel List----"
 peer channel list
 
-# echo "—---------------install chaincode in auditor peer—-------------"
+# echo "—---------------install chaincode in dealer peer—-------------"
 
 # peer lifecycle chaincode install basic.tar.gz
 # sleep 3
 
 # peer lifecycle chaincode queryinstalled
 
-# echo "—---------------Approve chaincode in auditor peer—-------------"
+# echo "—---------------Approve chaincode in dealer peer—-------------"
 
-# peer lifecycle chaincode approveformyorg -o localhost:7050 --ordererTLSHostnameOverride orderer.voting.com --channelID $CHANNEL_NAME --name basic --version 1.0 --package-id $CC_PACKAGE_ID --sequence 1 --tls --cafile $ORDERER_CA --waitForEvent
+# peer lifecycle chaincode approveformyorg -o localhost:7050 --ordererTLSHostnameOverride orderer.agri.com --channelID $CHANNEL_NAME --name basic --version 1.0 --package-id $CC_PACKAGE_ID --sequence 1 --tls --cafile $ORDERER_CA --waitForEvent
 # sleep 1
 
 
-export CORE_PEER_LOCALMSPID=candidateMSP 
+export CORE_PEER_LOCALMSPID=buyerMSP 
 export CORE_PEER_ADDRESS=localhost:11051 
-export CORE_PEER_TLS_ROOTCERT_FILE=${PWD}/organizations/peerOrganizations/candidate.voting.com/peers/peer0.candidate.voting.com/tls/ca.crt
-export CORE_PEER_MSPCONFIGPATH=${PWD}/organizations/peerOrganizations/candidate.voting.com/users/Admin@candidate.voting.com/msp
+export CORE_PEER_TLS_ROOTCERT_FILE=${PWD}/organizations/peerOrganizations/buyer.agri.com/peers/peer0.buyer.agri.com/tls/ca.crt
+export CORE_PEER_MSPCONFIGPATH=${PWD}/organizations/peerOrganizations/buyer.agri.com/users/Admin@buyer.agri.com/msp
 
-echo "—---------------Join candidate peer to the channel—-------------"
+echo "—---------------Join buyer peer to the channel—-------------"
 
 peer channel join -b ${PWD}/channel-artifacts/$CHANNEL_NAME.block
 sleep 1
 peer channel list
 
-echo "—-------------candidate anchor peer update—-----------"
+echo "—-------------buyer anchor peer update—-----------"
 
 
-peer channel fetch config ${PWD}/channel-artifacts/config_block.pb -o localhost:7050 --ordererTLSHostnameOverride orderer.voting.com -c $CHANNEL_NAME --tls --cafile $ORDERER_CA
+peer channel fetch config ${PWD}/channel-artifacts/config_block.pb -o localhost:7050 --ordererTLSHostnameOverride orderer.agri.com -c $CHANNEL_NAME --tls --cafile $ORDERER_CA
 sleep 1
 
 cd channel-artifacts
@@ -249,7 +248,7 @@ jq '.data.data[0].payload.data.config' config_block.json > config.json
 
 cp config.json config_copy.json
 
-jq '.channel_group.groups.Application.groups.candidateMSP.values += {"AnchorPeers":{"mod_policy": "Admins","value":{"anchor_peers": [{"host": "peer0.candidate.voting.com","port": 11051}]},"version": "0"}}' config_copy.json > modified_config.json
+jq '.channel_group.groups.Application.groups.buyerMSP.values += {"AnchorPeers":{"mod_policy": "Admins","value":{"anchor_peers": [{"host": "peer0.buyer.agri.com","port": 11051}]},"version": "0"}}' config_copy.json > modified_config.json
 
 configtxlator proto_encode --input config.json --type common.Config --output config.pb
 configtxlator proto_encode --input modified_config.json --type common.Config --output modified_config.pb
@@ -261,29 +260,28 @@ configtxlator proto_encode --input config_update_in_envelope.json --type common.
 
 cd ..
 
-peer channel update -f ${PWD}/channel-artifacts/config_update_in_envelope.pb -c $CHANNEL_NAME -o localhost:7050  --ordererTLSHostnameOverride orderer.voting.com --tls --cafile $ORDERER_CA
+peer channel update -f ${PWD}/channel-artifacts/config_update_in_envelope.pb -c $CHANNEL_NAME -o localhost:7050  --ordererTLSHostnameOverride orderer.agri.com --tls --cafile $ORDERER_CA
 sleep 1
 
-# echo "—---------------install chaincode in candidate peer—-------------"
+# echo "—---------------install chaincode in buyer peer—-------------"
 
 # peer lifecycle chaincode install basic.tar.gz
 # sleep 3
 
 # peer lifecycle chaincode queryinstalled
 
-# echo "—---------------Approve chaincode in candidate peer—-------------"
+# echo "—---------------Approve chaincode in buyer peer—-------------"
 
-# peer lifecycle chaincode approveformyorg -o localhost:7050 --ordererTLSHostnameOverride orderer.voting.com --channelID $CHANNEL_NAME --name basic --version 1.0 --package-id $CC_PACKAGE_ID --sequence 1 --tls --cafile $ORDERER_CA --waitForEvent
+# peer lifecycle chaincode approveformyorg -o localhost:7050 --ordererTLSHostnameOverride orderer.agri.com --channelID $CHANNEL_NAME --name basic --version 1.0 --package-id $CC_PACKAGE_ID --sequence 1 --tls --cafile $ORDERER_CA --waitForEvent
 # sleep 1
 
 
-# echo "—---------------Commit chaincode in candidate peer—-------------"
+# echo "—---------------Commit chaincode in buyer peer—-------------"
 
 
 # peer lifecycle chaincode checkcommitreadiness --channelID $CHANNEL_NAME --name basic --version 1.0 --sequence 1 --tls --cafile $ORDERER_CA --output json
 
-# peer lifecycle chaincode commit -o localhost:7050 --ordererTLSHostnameOverride orderer.voting.com --channelID $CHANNEL_NAME --name basic --version 1.0 --sequence 1 --tls --cafile $ORDERER_CA --peerAddresses localhost:7051 --tlsRootCertFiles $voters_PEER_TLSROOTCERT --peerAddresses localhost:9051 --tlsRootCertFiles $auditor_PEER_TLSROOTCERT
+# peer lifecycle chaincode commit -o localhost:7050 --ordererTLSHostnameOverride orderer.agri.com --channelID $CHANNEL_NAME --name basic --version 1.0 --sequence 1 --tls --cafile $ORDERER_CA --peerAddresses localhost:7051 --tlsRootCertFiles $manufacturer_PEER_TLSROOTCERT --peerAddresses localhost:9051 --tlsRootCertFiles $dealer_PEER_TLSROOTCERT
 # sleep 1
 
 # peer lifecycle chaincode querycommitted --channelID $CHANNEL_NAME --name basic --cafile $ORDERER_CA
-

@@ -32,40 +32,23 @@ Organizations:
       Endorsement:
         Type: Signature
         Rule: "OR('TrafficManagementMSP.peer')"
-  - &InsuranceCompany
-    Name: InsuranceCompanyMSP
-    ID: InsuranceCompanyMSP
-    MSPDir: ../organizations/peerOrganizations/insuranceCompany.traffic.com/msp
+  - &MVD
+    Name: MVDMSP
+    ID: MVDMSP
+    MSPDir: ../organizations/peerOrganizations/mvd.traffic.com/msp
     Policies:
       Readers:
         Type: Signature
-        Rule: "OR('InsuranceCompanyMSP.admin', 'InsuranceCompanyMSP.peer', 'InsuranceCompanyMSP.client')"
+        Rule: "OR('MVDMSP.admin', 'MVDMSP.peer', 'MVDMSP.client')"
       Writers:
         Type: Signature
-        Rule: "OR('InsuranceCompanyMSP.admin', 'InsuranceCompanyMSP.client')"
+        Rule: "OR('MVDMSP.admin', 'MVDMSP.client')"
       Admins:
         Type: Signature
-        Rule: "OR('InsuranceCompanyMSP.admin')"
+        Rule: "OR('MVDMSP.admin')"
       Endorsement:
         Type: Signature
-        Rule: "OR('InsuranceCompanyMSP.peer')"
-  - &VehicleManufacturers
-    Name: VehicleManufacturersMSP
-    ID: VehicleManufacturersMSP
-    MSPDir: ../organizations/peerOrganizations/vehicleManufacturers.traffic.com/msp
-    Policies:
-      Readers:
-        Type: Signature
-        Rule: "OR('VehicleManufacturersMSP.admin', 'VehicleManufacturersMSP.peer', 'VehicleManufacturersMSP.client')"
-      Writers:
-        Type: Signature
-        Rule: "OR('VehicleManufacturersMSP.admin', 'VehicleManufacturersMSP.client')"
-      Admins:
-        Type: Signature
-        Rule: "OR('VehicleManufacturersMSP.admin')"
-      Endorsement:
-        Type: Signature
-        Rule: "OR('VehicleManufacturersMSP.peer')"
+        Rule: "OR('MVDMSP.peer')"
   - &LawEnforcement
     Name: LawEnforcementMSP
     ID: LawEnforcementMSP
@@ -83,6 +66,23 @@ Organizations:
       Endorsement:
         Type: Signature
         Rule: "OR('LawEnforcementMSP.peer')"
+  - &InsuranceCompany
+    Name: InsuranceCompanyMSP
+    ID: InsuranceCompanyMSP
+    MSPDir: ../organizations/peerOrganizations/insuranceCompany.traffic.com/msp
+    Policies:
+      Readers:
+        Type: Signature
+        Rule: "OR('InsuranceCompanyMSP.admin', 'InsuranceCompanyMSP.peer', 'InsuranceCompanyMSP.client')"
+      Writers:
+        Type: Signature
+        Rule: "OR('InsuranceCompanyMSP.admin', 'InsuranceCompanyMSP.client')"
+      Admins:
+        Type: Signature
+        Rule: "OR('InsuranceCompanyMSP.admin')"
+      Endorsement:
+        Type: Signature
+        Rule: "OR('InsuranceCompanyMSP.peer')"
 
 Capabilities:
   Channel: &ChannelCapabilities
@@ -169,7 +169,7 @@ Profiles:
       <<: *ApplicationDefaults
       Organizations:
         - *TrafficManagement
-        - *InsuranceCompany
-        - *VehicleManufacturers
+        - *MVD
         - *LawEnforcement
+        - *InsuranceCompany
       Capabilities: *ApplicationCapabilities

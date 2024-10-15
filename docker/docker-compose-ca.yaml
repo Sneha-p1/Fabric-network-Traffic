@@ -26,13 +26,13 @@ services:
     networks:
       - Traffic
 
-  ca_insuranceCompany:
+  ca_mvd:
     image: hyperledger/fabric-ca:latest
     labels:
       service: hyperledger-fabric
     environment:
       - FABRIC_CA_HOME=/etc/hyperledger/fabric-ca-server
-      - FABRIC_CA_SERVER_CA_NAME=ca-insuranceCompany
+      - FABRIC_CA_SERVER_CA_NAME=ca-mvd
       - FABRIC_CA_SERVER_TLS_ENABLED=true
       - FABRIC_CA_SERVER_PORT=8054
       - FABRIC_CA_SERVER_OPERATIONS_LISTENADDRESS=0.0.0.0:18054
@@ -41,28 +41,8 @@ services:
       - "18054:18054"
     command: sh -c 'fabric-ca-server start -b admin:adminpw -d'
     volumes:
-      - ../organizations/fabric-ca/insuranceCompany:/etc/hyperledger/fabric-ca-server
-    container_name: ca_insuranceCompany
-    networks:
-      - Traffic
-
-  ca_vehicleManufacturers:
-    image: hyperledger/fabric-ca:latest
-    labels:
-      service: hyperledger-fabric
-    environment:
-      - FABRIC_CA_HOME=/etc/hyperledger/fabric-ca-server
-      - FABRIC_CA_SERVER_CA_NAME=ca-vehicleManufacturers
-      - FABRIC_CA_SERVER_TLS_ENABLED=true
-      - FABRIC_CA_SERVER_PORT=11054
-      - FABRIC_CA_SERVER_OPERATIONS_LISTENADDRESS=0.0.0.0:11055
-    ports:
-      - "11054:11054"
-      - "11055:11055"
-    command: sh -c 'fabric-ca-server start -b admin:adminpw -d'
-    volumes:
-      - ../organizations/fabric-ca/vehicleManufacturers:/etc/hyperledger/fabric-ca-server
-    container_name: ca_vehicleManufacturers
+      - ../organizations/fabric-ca/mvd:/etc/hyperledger/fabric-ca-server
+    container_name: ca_mvd
     networks:
       - Traffic
 
@@ -74,6 +54,26 @@ services:
       - FABRIC_CA_HOME=/etc/hyperledger/fabric-ca-server
       - FABRIC_CA_SERVER_CA_NAME=ca-lawEnforcement
       - FABRIC_CA_SERVER_TLS_ENABLED=true
+      - FABRIC_CA_SERVER_PORT=11054
+      - FABRIC_CA_SERVER_OPERATIONS_LISTENADDRESS=0.0.0.0:11055
+    ports:
+      - "11054:11054"
+      - "11055:11055"
+    command: sh -c 'fabric-ca-server start -b admin:adminpw -d'
+    volumes:
+      - ../organizations/fabric-ca/lawEnforcement:/etc/hyperledger/fabric-ca-server
+    container_name: ca_lawEnforcement
+    networks:
+      - Traffic
+
+  ca_insuranceCompany:
+    image: hyperledger/fabric-ca:latest
+    labels:
+      service: hyperledger-fabric
+    environment:
+      - FABRIC_CA_HOME=/etc/hyperledger/fabric-ca-server
+      - FABRIC_CA_SERVER_CA_NAME=ca-insuranceCompany
+      - FABRIC_CA_SERVER_TLS_ENABLED=true
       - FABRIC_CA_SERVER_PORT=7066
       - FABRIC_CA_SERVER_OPERATIONS_LISTENADDRESS=0.0.0.0:17066
     ports:
@@ -81,8 +81,8 @@ services:
       - "17066:17066"
     command: sh -c 'fabric-ca-server start -b admin:adminpw -d'
     volumes:
-      - ../organizations/fabric-ca/lawEnforcement:/etc/hyperledger/fabric-ca-server
-    container_name: ca_lawEnforcement
+      - ../organizations/fabric-ca/insuranceCompany:/etc/hyperledger/fabric-ca-server
+    container_name: ca_insuranceCompany
     networks:
       - Traffic
       

@@ -44,6 +44,11 @@ function createTrafficManagement() {
   fabric-ca-client register --caname ca-trafficManagement --id.name peer0 --id.secret peer0pw --id.type peer --tls.certfiles "${PWD}/organizations/fabric-ca/trafficManagement/ca-cert.pem"
   { set +x; } 2>/dev/null
 
+  echo "Registering peer1"
+  set -x
+  fabric-ca-client register --caname ca-trafficManagement --id.name peer1 --id.secret peer1pw --id.type peer --tls.certfiles "${PWD}/organizations/fabric-ca/trafficManagement/ca-cert.pem"
+  { set +x; } 2>/dev/null
+
   echo "Registering user"
   set -x
   fabric-ca-client register --caname ca-trafficManagement --id.name user1 --id.secret user1pw --id.type client --tls.certfiles "${PWD}/organizations/fabric-ca/trafficManagement/ca-cert.pem"
@@ -71,6 +76,23 @@ function createTrafficManagement() {
   cp "${PWD}/organizations/peerOrganizations/trafficManagement.traffic.com/peers/peer0.trafficManagement.traffic.com/tls/signcerts/"* "${PWD}/organizations/peerOrganizations/trafficManagement.traffic.com/peers/peer0.trafficManagement.traffic.com/tls/server.crt"
   cp "${PWD}/organizations/peerOrganizations/trafficManagement.traffic.com/peers/peer0.trafficManagement.traffic.com/tls/keystore/"* "${PWD}/organizations/peerOrganizations/trafficManagement.traffic.com/peers/peer0.trafficManagement.traffic.com/tls/server.key"
 
+  echo "Generating the peer1 msp"
+  set -x
+  fabric-ca-client enroll -u https://peer1:peer1pw@localhost:7054 --caname ca-trafficManagement -M "${PWD}/organizations/peerOrganizations/trafficManagement.traffic.com/peers/peer1.trafficManagement.traffic.com/msp" --tls.certfiles "${PWD}/organizations/fabric-ca/trafficManagement/ca-cert.pem"
+  { set +x; } 2>/dev/null
+
+  cp "${PWD}/organizations/peerOrganizations/trafficManagement.traffic.com/msp/config.yaml" "${PWD}/organizations/peerOrganizations/trafficManagement.traffic.com/peers/peer1.trafficManagement.traffic.com/msp/config.yaml"
+
+  echo "Generating the peer1-tls certificates, use --csr.hosts to specify Subject Alternative Names"
+  set -x
+  fabric-ca-client enroll -u https://peer1:peer1pw@localhost:7054 --caname ca-trafficManagement -M "${PWD}/organizations/peerOrganizations/trafficManagement.traffic.com/peers/peer1.trafficManagement.traffic.com/tls" --enrollment.profile tls --csr.hosts peer1.trafficManagement.traffic.com --csr.hosts localhost --tls.certfiles "${PWD}/organizations/fabric-ca/trafficManagement/ca-cert.pem"
+  { set +x; } 2>/dev/null
+
+  # Copy the tls CA cert, server cert, server keystore to well known file names in the peer's tls directory that are referenced by peer startup config
+  cp "${PWD}/organizations/peerOrganizations/trafficManagement.traffic.com/peers/peer1.trafficManagement.traffic.com/tls/tlscacerts/"* "${PWD}/organizations/peerOrganizations/trafficManagement.traffic.com/peers/peer1.trafficManagement.traffic.com/tls/ca.crt"
+  cp "${PWD}/organizations/peerOrganizations/trafficManagement.traffic.com/peers/peer1.trafficManagement.traffic.com/tls/signcerts/"* "${PWD}/organizations/peerOrganizations/trafficManagement.traffic.com/peers/peer1.trafficManagement.traffic.com/tls/server.crt"
+  cp "${PWD}/organizations/peerOrganizations/trafficManagement.traffic.com/peers/peer1.trafficManagement.traffic.com/tls/keystore/"* "${PWD}/organizations/peerOrganizations/trafficManagement.traffic.com/peers/peer1.trafficManagement.traffic.com/tls/server.key"
+
   echo "Generating the user msp"
   set -x
   fabric-ca-client enroll -u https://user1:user1pw@localhost:7054 --caname ca-trafficManagement -M "${PWD}/organizations/peerOrganizations/trafficManagement.traffic.com/users/User1@trafficManagement.traffic.com/msp" --tls.certfiles "${PWD}/organizations/fabric-ca/trafficManagement/ca-cert.pem"
@@ -86,178 +108,92 @@ function createTrafficManagement() {
   cp "${PWD}/organizations/peerOrganizations/trafficManagement.traffic.com/msp/config.yaml" "${PWD}/organizations/peerOrganizations/trafficManagement.traffic.com/users/Admin@trafficManagement.traffic.com/msp/config.yaml"
 }
 
-function createInsuranceCompany() {
+function createMVD() {
   echo "Enrolling the CA admin"
-  mkdir -p organizations/peerOrganizations/insuranceCompany.traffic.com/
+  mkdir -p organizations/peerOrganizations/mvd.traffic.com/
 
-  export FABRIC_CA_CLIENT_HOME=${PWD}/organizations/peerOrganizations/insuranceCompany.traffic.com/
+  export FABRIC_CA_CLIENT_HOME=${PWD}/organizations/peerOrganizations/mvd.traffic.com/
 
   set -x
-  fabric-ca-client enroll -u https://admin:adminpw@localhost:8054 --caname ca-insuranceCompany --tls.certfiles "${PWD}/organizations/fabric-ca/insuranceCompany/ca-cert.pem"
+  fabric-ca-client enroll -u https://admin:adminpw@localhost:8054 --caname ca-mvd --tls.certfiles "${PWD}/organizations/fabric-ca/mvd/ca-cert.pem"
   { set +x; } 2>/dev/null
 
   echo 'NodeOUs:
   Enable: true
   ClientOUIdentifier:
-    Certificate: cacerts/localhost-8054-ca-insuranceCompany.pem
+    Certificate: cacerts/localhost-8054-ca-mvd.pem
     OrganizationalUnitIdentifier: client
   PeerOUIdentifier:
-    Certificate: cacerts/localhost-8054-ca-insuranceCompany.pem
+    Certificate: cacerts/localhost-8054-ca-mvd.pem
     OrganizationalUnitIdentifier: peer
   AdminOUIdentifier:
-    Certificate: cacerts/localhost-8054-ca-insuranceCompany.pem
+    Certificate: cacerts/localhost-8054-ca-mvd.pem
     OrganizationalUnitIdentifier: admin
   OrdererOUIdentifier:
-    Certificate: cacerts/localhost-8054-ca-insuranceCompany.pem
-    OrganizationalUnitIdentifier: orderer' > "${PWD}/organizations/peerOrganizations/insuranceCompany.traffic.com/msp/config.yaml"
+    Certificate: cacerts/localhost-8054-ca-mvd.pem
+    OrganizationalUnitIdentifier: orderer' > "${PWD}/organizations/peerOrganizations/mvd.traffic.com/msp/config.yaml"
 
   # Since the CA serves as both the organization CA and TLS CA, copy the org's root cert that was generated by CA startup into the org level ca and tlsca directories
 
-  # Copy insuranceCompany's CA cert to insuranceCompany's /msp/tlscacerts directory (for use in the channel MSP definition)
-  mkdir -p "${PWD}/organizations/peerOrganizations/insuranceCompany.traffic.com/msp/tlscacerts"
-  cp "${PWD}/organizations/fabric-ca/insuranceCompany/ca-cert.pem" "${PWD}/organizations/peerOrganizations/insuranceCompany.traffic.com/msp/tlscacerts/ca.crt"
+  # Copy mvd's CA cert to mvd's /msp/tlscacerts directory (for use in the channel MSP definition)
+  mkdir -p "${PWD}/organizations/peerOrganizations/mvd.traffic.com/msp/tlscacerts"
+  cp "${PWD}/organizations/fabric-ca/mvd/ca-cert.pem" "${PWD}/organizations/peerOrganizations/mvd.traffic.com/msp/tlscacerts/ca.crt"
 
-  # Copy insuranceCompany's CA cert to insuranceCompany's /tlsca directory (for use by clients)
-  mkdir -p "${PWD}/organizations/peerOrganizations/insuranceCompany.traffic.com/tlsca"
-  cp "${PWD}/organizations/fabric-ca/insuranceCompany/ca-cert.pem" "${PWD}/organizations/peerOrganizations/insuranceCompany.traffic.com/tlsca/tlsca.insuranceCompany.traffic.com-cert.pem"
+  # Copy mvd's CA cert to mvd's /tlsca directory (for use by clients)
+  mkdir -p "${PWD}/organizations/peerOrganizations/mvd.traffic.com/tlsca"
+  cp "${PWD}/organizations/fabric-ca/mvd/ca-cert.pem" "${PWD}/organizations/peerOrganizations/mvd.traffic.com/tlsca/tlsca.mvd.traffic.com-cert.pem"
 
-  # Copy insuranceCompany's CA cert to insuranceCompany's /ca directory (for use by clients)
-  mkdir -p "${PWD}/organizations/peerOrganizations/insuranceCompany.traffic.com/ca"
-  cp "${PWD}/organizations/fabric-ca/insuranceCompany/ca-cert.pem" "${PWD}/organizations/peerOrganizations/insuranceCompany.traffic.com/ca/ca.insuranceCompany.traffic.com-cert.pem"
+  # Copy mvd's CA cert to mvd's /ca directory (for use by clients)
+  mkdir -p "${PWD}/organizations/peerOrganizations/mvd.traffic.com/ca"
+  cp "${PWD}/organizations/fabric-ca/mvd/ca-cert.pem" "${PWD}/organizations/peerOrganizations/mvd.traffic.com/ca/ca.mvd.traffic.com-cert.pem"
 
   echo "Registering peer0"
   set -x
-  fabric-ca-client register --caname ca-insuranceCompany --id.name peer0 --id.secret peer0pw --id.type peer --tls.certfiles "${PWD}/organizations/fabric-ca/insuranceCompany/ca-cert.pem"
+  fabric-ca-client register --caname ca-mvd --id.name peer0 --id.secret peer0pw --id.type peer --tls.certfiles "${PWD}/organizations/fabric-ca/mvd/ca-cert.pem"
   { set +x; } 2>/dev/null
 
   echo "Registering user"
   set -x
-  fabric-ca-client register --caname ca-insuranceCompany --id.name user1 --id.secret user1pw --id.type client --tls.certfiles "${PWD}/organizations/fabric-ca/insuranceCompany/ca-cert.pem"
+  fabric-ca-client register --caname ca-mvd --id.name user1 --id.secret user1pw --id.type client --tls.certfiles "${PWD}/organizations/fabric-ca/mvd/ca-cert.pem"
   { set +x; } 2>/dev/null
 
   echo "Registering the org admin"
   set -x
-  fabric-ca-client register --caname ca-insuranceCompany --id.name insuranceCompanyadmin --id.secret insuranceCompanyadminpw --id.type admin --tls.certfiles "${PWD}/organizations/fabric-ca/insuranceCompany/ca-cert.pem"
+  fabric-ca-client register --caname ca-mvd --id.name mvdadmin --id.secret mvdadminpw --id.type admin --tls.certfiles "${PWD}/organizations/fabric-ca/mvd/ca-cert.pem"
   { set +x; } 2>/dev/null
 
   echo "Generating the peer0 msp"
   set -x
-  fabric-ca-client enroll -u https://peer0:peer0pw@localhost:8054 --caname ca-insuranceCompany -M "${PWD}/organizations/peerOrganizations/insuranceCompany.traffic.com/peers/peer0.insuranceCompany.traffic.com/msp" --tls.certfiles "${PWD}/organizations/fabric-ca/insuranceCompany/ca-cert.pem"
+  fabric-ca-client enroll -u https://peer0:peer0pw@localhost:8054 --caname ca-mvd -M "${PWD}/organizations/peerOrganizations/mvd.traffic.com/peers/peer0.mvd.traffic.com/msp" --tls.certfiles "${PWD}/organizations/fabric-ca/mvd/ca-cert.pem"
   { set +x; } 2>/dev/null
 
-  cp "${PWD}/organizations/peerOrganizations/insuranceCompany.traffic.com/msp/config.yaml" "${PWD}/organizations/peerOrganizations/insuranceCompany.traffic.com/peers/peer0.insuranceCompany.traffic.com/msp/config.yaml"
+  cp "${PWD}/organizations/peerOrganizations/mvd.traffic.com/msp/config.yaml" "${PWD}/organizations/peerOrganizations/mvd.traffic.com/peers/peer0.mvd.traffic.com/msp/config.yaml"
 
   echo "Generating the peer0-tls certificates, use --csr.hosts to specify Subject Alternative Names"
   set -x
-  fabric-ca-client enroll -u https://peer0:peer0pw@localhost:8054 --caname ca-insuranceCompany -M "${PWD}/organizations/peerOrganizations/insuranceCompany.traffic.com/peers/peer0.insuranceCompany.traffic.com/tls" --enrollment.profile tls --csr.hosts peer0.insuranceCompany.traffic.com --csr.hosts localhost --tls.certfiles "${PWD}/organizations/fabric-ca/insuranceCompany/ca-cert.pem"
+  fabric-ca-client enroll -u https://peer0:peer0pw@localhost:8054 --caname ca-mvd -M "${PWD}/organizations/peerOrganizations/mvd.traffic.com/peers/peer0.mvd.traffic.com/tls" --enrollment.profile tls --csr.hosts peer0.mvd.traffic.com --csr.hosts localhost --tls.certfiles "${PWD}/organizations/fabric-ca/mvd/ca-cert.pem"
   { set +x; } 2>/dev/null
 
   # Copy the tls CA cert, server cert, server keystore to well known file names in the peer's tls directory that are referenced by peer startup config
-  cp "${PWD}/organizations/peerOrganizations/insuranceCompany.traffic.com/peers/peer0.insuranceCompany.traffic.com/tls/tlscacerts/"* "${PWD}/organizations/peerOrganizations/insuranceCompany.traffic.com/peers/peer0.insuranceCompany.traffic.com/tls/ca.crt"
-  cp "${PWD}/organizations/peerOrganizations/insuranceCompany.traffic.com/peers/peer0.insuranceCompany.traffic.com/tls/signcerts/"* "${PWD}/organizations/peerOrganizations/insuranceCompany.traffic.com/peers/peer0.insuranceCompany.traffic.com/tls/server.crt"
-  cp "${PWD}/organizations/peerOrganizations/insuranceCompany.traffic.com/peers/peer0.insuranceCompany.traffic.com/tls/keystore/"* "${PWD}/organizations/peerOrganizations/insuranceCompany.traffic.com/peers/peer0.insuranceCompany.traffic.com/tls/server.key"
+  cp "${PWD}/organizations/peerOrganizations/mvd.traffic.com/peers/peer0.mvd.traffic.com/tls/tlscacerts/"* "${PWD}/organizations/peerOrganizations/mvd.traffic.com/peers/peer0.mvd.traffic.com/tls/ca.crt"
+  cp "${PWD}/organizations/peerOrganizations/mvd.traffic.com/peers/peer0.mvd.traffic.com/tls/signcerts/"* "${PWD}/organizations/peerOrganizations/mvd.traffic.com/peers/peer0.mvd.traffic.com/tls/server.crt"
+  cp "${PWD}/organizations/peerOrganizations/mvd.traffic.com/peers/peer0.mvd.traffic.com/tls/keystore/"* "${PWD}/organizations/peerOrganizations/mvd.traffic.com/peers/peer0.mvd.traffic.com/tls/server.key"
 
   echo "Generating the user msp"
   set -x
-  fabric-ca-client enroll -u https://user1:user1pw@localhost:8054 --caname ca-insuranceCompany -M "${PWD}/organizations/peerOrganizations/insuranceCompany.traffic.com/users/User1@insuranceCompany.traffic.com/msp" --tls.certfiles "${PWD}/organizations/fabric-ca/insuranceCompany/ca-cert.pem"
+  fabric-ca-client enroll -u https://user1:user1pw@localhost:8054 --caname ca-mvd -M "${PWD}/organizations/peerOrganizations/mvd.traffic.com/users/User1@mvd.traffic.com/msp" --tls.certfiles "${PWD}/organizations/fabric-ca/mvd/ca-cert.pem"
   { set +x; } 2>/dev/null
 
-  cp "${PWD}/organizations/peerOrganizations/insuranceCompany.traffic.com/msp/config.yaml" "${PWD}/organizations/peerOrganizations/insuranceCompany.traffic.com/users/User1@insuranceCompany.traffic.com/msp/config.yaml"
+  cp "${PWD}/organizations/peerOrganizations/mvd.traffic.com/msp/config.yaml" "${PWD}/organizations/peerOrganizations/mvd.traffic.com/users/User1@mvd.traffic.com/msp/config.yaml"
 
   echo "Generating the org admin msp"
   set -x
-  fabric-ca-client enroll -u https://insuranceCompanyadmin:insuranceCompanyadminpw@localhost:8054 --caname ca-insuranceCompany -M "${PWD}/organizations/peerOrganizations/insuranceCompany.traffic.com/users/Admin@insuranceCompany.traffic.com/msp" --tls.certfiles "${PWD}/organizations/fabric-ca/insuranceCompany/ca-cert.pem"
+  fabric-ca-client enroll -u https://mvdadmin:mvdadminpw@localhost:8054 --caname ca-mvd -M "${PWD}/organizations/peerOrganizations/mvd.traffic.com/users/Admin@mvd.traffic.com/msp" --tls.certfiles "${PWD}/organizations/fabric-ca/mvd/ca-cert.pem"
   { set +x; } 2>/dev/null
 
-  cp "${PWD}/organizations/peerOrganizations/insuranceCompany.traffic.com/msp/config.yaml" "${PWD}/organizations/peerOrganizations/insuranceCompany.traffic.com/users/Admin@insuranceCompany.traffic.com/msp/config.yaml"
+  cp "${PWD}/organizations/peerOrganizations/mvd.traffic.com/msp/config.yaml" "${PWD}/organizations/peerOrganizations/mvd.traffic.com/users/Admin@mvd.traffic.com/msp/config.yaml"
 }
 
-
-function createVehicleManufacturers() {
-  echo "Enrolling the CA admin"
-  mkdir -p organizations/peerOrganizations/vehicleManufacturers.traffic.com/
-
-  export FABRIC_CA_CLIENT_HOME=${PWD}/organizations/peerOrganizations/vehicleManufacturers.traffic.com/
-
-  set -x
-  fabric-ca-client enroll -u https://admin:adminpw@localhost:11054 --caname ca-vehicleManufacturers --tls.certfiles "${PWD}/organizations/fabric-ca/vehicleManufacturers/ca-cert.pem"
-  { set +x; } 2>/dev/null
-
-  echo 'NodeOUs:
-  Enable: true
-  ClientOUIdentifier:
-    Certificate: cacerts/localhost-11054-ca-vehicleManufacturers.pem
-    OrganizationalUnitIdentifier: client
-  PeerOUIdentifier:
-    Certificate: cacerts/localhost-11054-ca-vehicleManufacturers.pem
-    OrganizationalUnitIdentifier: peer
-  AdminOUIdentifier:
-    Certificate: cacerts/localhost-11054-ca-vehicleManufacturers.pem
-    OrganizationalUnitIdentifier: admin
-  OrdererOUIdentifier:
-    Certificate: cacerts/localhost-11054-ca-vehicleManufacturers.pem
-    OrganizationalUnitIdentifier: orderer' > "${PWD}/organizations/peerOrganizations/vehicleManufacturers.traffic.com/msp/config.yaml"
-
-  # Since the CA serves as both the organization CA and TLS CA, copy the org's root cert that was generated by CA startup into the org level ca and tlsca directories
-
-  # Copy vehicleManufacturers's CA cert to vehicleManufacturers's /msp/tlscacerts directory (for use in the channel MSP definition)
-  mkdir -p "${PWD}/organizations/peerOrganizations/vehicleManufacturers.traffic.com/msp/tlscacerts"
-  cp "${PWD}/organizations/fabric-ca/vehicleManufacturers/ca-cert.pem" "${PWD}/organizations/peerOrganizations/vehicleManufacturers.traffic.com/msp/tlscacerts/ca.crt"
-
-  # Copy vehicleManufacturers's CA cert to vehicleManufacturers's /tlsca directory (for use by clients)
-  mkdir -p "${PWD}/organizations/peerOrganizations/vehicleManufacturers.traffic.com/tlsca"
-  cp "${PWD}/organizations/fabric-ca/vehicleManufacturers/ca-cert.pem" "${PWD}/organizations/peerOrganizations/vehicleManufacturers.traffic.com/tlsca/tlsca.vehicleManufacturers.traffic.com-cert.pem"
-
-  # Copy vehicleManufacturers's CA cert to vehicleManufacturers's /ca directory (for use by clients)
-  mkdir -p "${PWD}/organizations/peerOrganizations/vehicleManufacturers.traffic.com/ca"
-  cp "${PWD}/organizations/fabric-ca/vehicleManufacturers/ca-cert.pem" "${PWD}/organizations/peerOrganizations/vehicleManufacturers.traffic.com/ca/ca.vehicleManufacturers.traffic.com-cert.pem"
-
-  echo "Registering peer0"
-  set -x
-  fabric-ca-client register --caname ca-vehicleManufacturers --id.name peer0 --id.secret peer0pw --id.type peer --tls.certfiles "${PWD}/organizations/fabric-ca/vehicleManufacturers/ca-cert.pem"
-  { set +x; } 2>/dev/null
-
-  echo "Registering user"
-  set -x
-  fabric-ca-client register --caname ca-vehicleManufacturers --id.name user1 --id.secret user1pw --id.type client --tls.certfiles "${PWD}/organizations/fabric-ca/vehicleManufacturers/ca-cert.pem"
-  { set +x; } 2>/dev/null
-
-  echo "Registering the org admin"
-  set -x
-  fabric-ca-client register --caname ca-vehicleManufacturers --id.name vehicleManufacturersadmin --id.secret vehicleManufacturersadminpw --id.type admin --tls.certfiles "${PWD}/organizations/fabric-ca/vehicleManufacturers/ca-cert.pem"
-  { set +x; } 2>/dev/null
-
-  echo "Generating the peer0 msp"
-  set -x
-  fabric-ca-client enroll -u https://peer0:peer0pw@localhost:11054 --caname ca-vehicleManufacturers -M "${PWD}/organizations/peerOrganizations/vehicleManufacturers.traffic.com/peers/peer0.vehicleManufacturers.traffic.com/msp" --tls.certfiles "${PWD}/organizations/fabric-ca/vehicleManufacturers/ca-cert.pem"
-  { set +x; } 2>/dev/null
-
-  cp "${PWD}/organizations/peerOrganizations/vehicleManufacturers.traffic.com/msp/config.yaml" "${PWD}/organizations/peerOrganizations/vehicleManufacturers.traffic.com/peers/peer0.vehicleManufacturers.traffic.com/msp/config.yaml"
-
-  echo "Generating the peer0-tls certificates, use --csr.hosts to specify Subject Alternative Names"
-  set -x
-  fabric-ca-client enroll -u https://peer0:peer0pw@localhost:11054 --caname ca-vehicleManufacturers -M "${PWD}/organizations/peerOrganizations/vehicleManufacturers.traffic.com/peers/peer0.vehicleManufacturers.traffic.com/tls" --enrollment.profile tls --csr.hosts peer0.vehicleManufacturers.traffic.com --csr.hosts localhost --tls.certfiles "${PWD}/organizations/fabric-ca/vehicleManufacturers/ca-cert.pem"
-  { set +x; } 2>/dev/null
-
-  # Copy the tls CA cert, server cert, server keystore to well known file names in the peer's tls directory that are referenced by peer startup config
-  cp "${PWD}/organizations/peerOrganizations/vehicleManufacturers.traffic.com/peers/peer0.vehicleManufacturers.traffic.com/tls/tlscacerts/"* "${PWD}/organizations/peerOrganizations/vehicleManufacturers.traffic.com/peers/peer0.vehicleManufacturers.traffic.com/tls/ca.crt"
-  cp "${PWD}/organizations/peerOrganizations/vehicleManufacturers.traffic.com/peers/peer0.vehicleManufacturers.traffic.com/tls/signcerts/"* "${PWD}/organizations/peerOrganizations/vehicleManufacturers.traffic.com/peers/peer0.vehicleManufacturers.traffic.com/tls/server.crt"
-  cp "${PWD}/organizations/peerOrganizations/vehicleManufacturers.traffic.com/peers/peer0.vehicleManufacturers.traffic.com/tls/keystore/"* "${PWD}/organizations/peerOrganizations/vehicleManufacturers.traffic.com/peers/peer0.vehicleManufacturers.traffic.com/tls/server.key"
-
-  echo "Generating the user msp"
-  set -x
-  fabric-ca-client enroll -u https://user1:user1pw@localhost:11054 --caname ca-vehicleManufacturers -M "${PWD}/organizations/peerOrganizations/vehicleManufacturers.traffic.com/users/User1@vehicleManufacturers.traffic.com/msp" --tls.certfiles "${PWD}/organizations/fabric-ca/vehicleManufacturers/ca-cert.pem"
-  { set +x; } 2>/dev/null
-
-  cp "${PWD}/organizations/peerOrganizations/vehicleManufacturers.traffic.com/msp/config.yaml" "${PWD}/organizations/peerOrganizations/vehicleManufacturers.traffic.com/users/User1@vehicleManufacturers.traffic.com/msp/config.yaml"
-
-  echo "Generating the org admin msp"
-  set -x
-  fabric-ca-client enroll -u https://vehicleManufacturersadmin:vehicleManufacturersadminpw@localhost:11054 --caname ca-vehicleManufacturers -M "${PWD}/organizations/peerOrganizations/vehicleManufacturers.traffic.com/users/Admin@vehicleManufacturers.traffic.com/msp" --tls.certfiles "${PWD}/organizations/fabric-ca/vehicleManufacturers/ca-cert.pem"
-  { set +x; } 2>/dev/null
-
-  cp "${PWD}/organizations/peerOrganizations/vehicleManufacturers.traffic.com/msp/config.yaml" "${PWD}/organizations/peerOrganizations/vehicleManufacturers.traffic.com/users/Admin@vehicleManufacturers.traffic.com/msp/config.yaml"
-}
 
 function createLawEnforcement() {
   echo "Enrolling the CA admin"
@@ -266,22 +202,22 @@ function createLawEnforcement() {
   export FABRIC_CA_CLIENT_HOME=${PWD}/organizations/peerOrganizations/lawEnforcement.traffic.com/
 
   set -x
-  fabric-ca-client enroll -u https://admin:adminpw@localhost:7066 --caname ca-lawEnforcement --tls.certfiles "${PWD}/organizations/fabric-ca/lawEnforcement/ca-cert.pem"
+  fabric-ca-client enroll -u https://admin:adminpw@localhost:11054 --caname ca-lawEnforcement --tls.certfiles "${PWD}/organizations/fabric-ca/lawEnforcement/ca-cert.pem"
   { set +x; } 2>/dev/null
 
   echo 'NodeOUs:
   Enable: true
   ClientOUIdentifier:
-    Certificate: cacerts/localhost-7066-ca-lawEnforcement.pem
+    Certificate: cacerts/localhost-11054-ca-lawEnforcement.pem
     OrganizationalUnitIdentifier: client
   PeerOUIdentifier:
-    Certificate: cacerts/localhost-7066-ca-lawEnforcement.pem
+    Certificate: cacerts/localhost-11054-ca-lawEnforcement.pem
     OrganizationalUnitIdentifier: peer
   AdminOUIdentifier:
-    Certificate: cacerts/localhost-7066-ca-lawEnforcement.pem
+    Certificate: cacerts/localhost-11054-ca-lawEnforcement.pem
     OrganizationalUnitIdentifier: admin
   OrdererOUIdentifier:
-    Certificate: cacerts/localhost-7066-ca-lawEnforcement.pem
+    Certificate: cacerts/localhost-11054-ca-lawEnforcement.pem
     OrganizationalUnitIdentifier: orderer' > "${PWD}/organizations/peerOrganizations/lawEnforcement.traffic.com/msp/config.yaml"
 
   # Since the CA serves as both the organization CA and TLS CA, copy the org's root cert that was generated by CA startup into the org level ca and tlsca directories
@@ -315,14 +251,14 @@ function createLawEnforcement() {
 
   echo "Generating the peer0 msp"
   set -x
-  fabric-ca-client enroll -u https://peer0:peer0pw@localhost:7066 --caname ca-lawEnforcement -M "${PWD}/organizations/peerOrganizations/lawEnforcement.traffic.com/peers/peer0.lawEnforcement.traffic.com/msp" --tls.certfiles "${PWD}/organizations/fabric-ca/lawEnforcement/ca-cert.pem"
+  fabric-ca-client enroll -u https://peer0:peer0pw@localhost:11054 --caname ca-lawEnforcement -M "${PWD}/organizations/peerOrganizations/lawEnforcement.traffic.com/peers/peer0.lawEnforcement.traffic.com/msp" --tls.certfiles "${PWD}/organizations/fabric-ca/lawEnforcement/ca-cert.pem"
   { set +x; } 2>/dev/null
 
   cp "${PWD}/organizations/peerOrganizations/lawEnforcement.traffic.com/msp/config.yaml" "${PWD}/organizations/peerOrganizations/lawEnforcement.traffic.com/peers/peer0.lawEnforcement.traffic.com/msp/config.yaml"
 
   echo "Generating the peer0-tls certificates, use --csr.hosts to specify Subject Alternative Names"
   set -x
-  fabric-ca-client enroll -u https://peer0:peer0pw@localhost:7066 --caname ca-lawEnforcement -M "${PWD}/organizations/peerOrganizations/lawEnforcement.traffic.com/peers/peer0.lawEnforcement.traffic.com/tls" --enrollment.profile tls --csr.hosts peer0.lawEnforcement.traffic.com --csr.hosts localhost --tls.certfiles "${PWD}/organizations/fabric-ca/lawEnforcement/ca-cert.pem"
+  fabric-ca-client enroll -u https://peer0:peer0pw@localhost:11054 --caname ca-lawEnforcement -M "${PWD}/organizations/peerOrganizations/lawEnforcement.traffic.com/peers/peer0.lawEnforcement.traffic.com/tls" --enrollment.profile tls --csr.hosts peer0.lawEnforcement.traffic.com --csr.hosts localhost --tls.certfiles "${PWD}/organizations/fabric-ca/lawEnforcement/ca-cert.pem"
   { set +x; } 2>/dev/null
 
   # Copy the tls CA cert, server cert, server keystore to well known file names in the peer's tls directory that are referenced by peer startup config
@@ -332,17 +268,103 @@ function createLawEnforcement() {
 
   echo "Generating the user msp"
   set -x
-  fabric-ca-client enroll -u https://user1:user1pw@localhost:7066 --caname ca-lawEnforcement -M "${PWD}/organizations/peerOrganizations/lawEnforcement.traffic.com/users/User1@lawEnforcement.traffic.com/msp" --tls.certfiles "${PWD}/organizations/fabric-ca/lawEnforcement/ca-cert.pem"
+  fabric-ca-client enroll -u https://user1:user1pw@localhost:11054 --caname ca-lawEnforcement -M "${PWD}/organizations/peerOrganizations/lawEnforcement.traffic.com/users/User1@lawEnforcement.traffic.com/msp" --tls.certfiles "${PWD}/organizations/fabric-ca/lawEnforcement/ca-cert.pem"
   { set +x; } 2>/dev/null
 
   cp "${PWD}/organizations/peerOrganizations/lawEnforcement.traffic.com/msp/config.yaml" "${PWD}/organizations/peerOrganizations/lawEnforcement.traffic.com/users/User1@lawEnforcement.traffic.com/msp/config.yaml"
 
   echo "Generating the org admin msp"
   set -x
-  fabric-ca-client enroll -u https://lawEnforcementadmin:lawEnforcementadminpw@localhost:7066 --caname ca-lawEnforcement -M "${PWD}/organizations/peerOrganizations/lawEnforcement.traffic.com/users/Admin@lawEnforcement.traffic.com/msp" --tls.certfiles "${PWD}/organizations/fabric-ca/lawEnforcement/ca-cert.pem"
+  fabric-ca-client enroll -u https://lawEnforcementadmin:lawEnforcementadminpw@localhost:11054 --caname ca-lawEnforcement -M "${PWD}/organizations/peerOrganizations/lawEnforcement.traffic.com/users/Admin@lawEnforcement.traffic.com/msp" --tls.certfiles "${PWD}/organizations/fabric-ca/lawEnforcement/ca-cert.pem"
   { set +x; } 2>/dev/null
 
   cp "${PWD}/organizations/peerOrganizations/lawEnforcement.traffic.com/msp/config.yaml" "${PWD}/organizations/peerOrganizations/lawEnforcement.traffic.com/users/Admin@lawEnforcement.traffic.com/msp/config.yaml"
+}
+
+function createInsuranceCompany() {
+  echo "Enrolling the CA admin"
+  mkdir -p organizations/peerOrganizations/insuranceCompany.traffic.com/
+
+  export FABRIC_CA_CLIENT_HOME=${PWD}/organizations/peerOrganizations/insuranceCompany.traffic.com/
+
+  set -x
+  fabric-ca-client enroll -u https://admin:adminpw@localhost:7066 --caname ca-insuranceCompany --tls.certfiles "${PWD}/organizations/fabric-ca/insuranceCompany/ca-cert.pem"
+  { set +x; } 2>/dev/null
+
+  echo 'NodeOUs:
+  Enable: true
+  ClientOUIdentifier:
+    Certificate: cacerts/localhost-7066-ca-insuranceCompany.pem
+    OrganizationalUnitIdentifier: client
+  PeerOUIdentifier:
+    Certificate: cacerts/localhost-7066-ca-insuranceCompany.pem
+    OrganizationalUnitIdentifier: peer
+  AdminOUIdentifier:
+    Certificate: cacerts/localhost-7066-ca-insuranceCompany.pem
+    OrganizationalUnitIdentifier: admin
+  OrdererOUIdentifier:
+    Certificate: cacerts/localhost-7066-ca-insuranceCompany.pem
+    OrganizationalUnitIdentifier: orderer' > "${PWD}/organizations/peerOrganizations/insuranceCompany.traffic.com/msp/config.yaml"
+
+  # Since the CA serves as both the organization CA and TLS CA, copy the org's root cert that was generated by CA startup into the org level ca and tlsca directories
+
+  # Copy insuranceCompany's CA cert to insuranceCompany's /msp/tlscacerts directory (for use in the channel MSP definition)
+  mkdir -p "${PWD}/organizations/peerOrganizations/insuranceCompany.traffic.com/msp/tlscacerts"
+  cp "${PWD}/organizations/fabric-ca/insuranceCompany/ca-cert.pem" "${PWD}/organizations/peerOrganizations/insuranceCompany.traffic.com/msp/tlscacerts/ca.crt"
+
+  # Copy insuranceCompany's CA cert to insuranceCompany's /tlsca directory (for use by clients)
+  mkdir -p "${PWD}/organizations/peerOrganizations/insuranceCompany.traffic.com/tlsca"
+  cp "${PWD}/organizations/fabric-ca/insuranceCompany/ca-cert.pem" "${PWD}/organizations/peerOrganizations/insuranceCompany.traffic.com/tlsca/tlsca.insuranceCompany.traffic.com-cert.pem"
+
+  # Copy insuranceCompany's CA cert to insuranceCompany's /ca directory (for use by clients)
+  mkdir -p "${PWD}/organizations/peerOrganizations/insuranceCompany.traffic.com/ca"
+  cp "${PWD}/organizations/fabric-ca/insuranceCompany/ca-cert.pem" "${PWD}/organizations/peerOrganizations/insuranceCompany.traffic.com/ca/ca.insuranceCompany.traffic.com-cert.pem"
+
+  echo "Registering peer0"
+  set -x
+  fabric-ca-client register --caname ca-insuranceCompany --id.name peer0 --id.secret peer0pw --id.type peer --tls.certfiles "${PWD}/organizations/fabric-ca/insuranceCompany/ca-cert.pem"
+  { set +x; } 2>/dev/null
+
+  echo "Registering user"
+  set -x
+  fabric-ca-client register --caname ca-insuranceCompany --id.name user1 --id.secret user1pw --id.type client --tls.certfiles "${PWD}/organizations/fabric-ca/insuranceCompany/ca-cert.pem"
+  { set +x; } 2>/dev/null
+
+  echo "Registering the org admin"
+  set -x
+  fabric-ca-client register --caname ca-insuranceCompany --id.name insuranceCompany --id.secret insuranceCompanyadminpw --id.type admin --tls.certfiles "${PWD}/organizations/fabric-ca/insuranceCompany/ca-cert.pem"
+  { set +x; } 2>/dev/null
+
+  echo "Generating the peer0 msp"
+  set -x
+  fabric-ca-client enroll -u https://peer0:peer0pw@localhost:7066 --caname ca-insuranceCompany -M "${PWD}/organizations/peerOrganizations/insuranceCompany.traffic.com/peers/peer0.insuranceCompany.traffic.com/msp" --tls.certfiles "${PWD}/organizations/fabric-ca/insuranceCompany/ca-cert.pem"
+  { set +x; } 2>/dev/null
+
+  cp "${PWD}/organizations/peerOrganizations/insuranceCompany.traffic.com/msp/config.yaml" "${PWD}/organizations/peerOrganizations/insuranceCompany.traffic.com/peers/peer0.insuranceCompany.traffic.com/msp/config.yaml"
+
+  echo "Generating the peer0-tls certificates, use --csr.hosts to specify Subject Alternative Names"
+  set -x
+  fabric-ca-client enroll -u https://peer0:peer0pw@localhost:7066 --caname ca-insuranceCompany -M "${PWD}/organizations/peerOrganizations/insuranceCompany.traffic.com/peers/peer0.insuranceCompany.traffic.com/tls" --enrollment.profile tls --csr.hosts peer0.insuranceCompany.traffic.com --csr.hosts localhost --tls.certfiles "${PWD}/organizations/fabric-ca/insuranceCompany/ca-cert.pem"
+  { set +x; } 2>/dev/null
+
+  # Copy the tls CA cert, server cert, server keystore to well known file names in the peer's tls directory that are referenced by peer startup config
+  cp "${PWD}/organizations/peerOrganizations/insuranceCompany.traffic.com/peers/peer0.insuranceCompany.traffic.com/tls/tlscacerts/"* "${PWD}/organizations/peerOrganizations/insuranceCompany.traffic.com/peers/peer0.insuranceCompany.traffic.com/tls/ca.crt"
+  cp "${PWD}/organizations/peerOrganizations/insuranceCompany.traffic.com/peers/peer0.insuranceCompany.traffic.com/tls/signcerts/"* "${PWD}/organizations/peerOrganizations/insuranceCompany.traffic.com/peers/peer0.insuranceCompany.traffic.com/tls/server.crt"
+  cp "${PWD}/organizations/peerOrganizations/insuranceCompany.traffic.com/peers/peer0.insuranceCompany.traffic.com/tls/keystore/"* "${PWD}/organizations/peerOrganizations/insuranceCompany.traffic.com/peers/peer0.insuranceCompany.traffic.com/tls/server.key"
+
+  echo "Generating the user msp"
+  set -x
+  fabric-ca-client enroll -u https://user1:user1pw@localhost:7066 --caname ca-insuranceCompany -M "${PWD}/organizations/peerOrganizations/insuranceCompany.traffic.com/users/User1@insuranceCompany.traffic.com/msp" --tls.certfiles "${PWD}/organizations/fabric-ca/insuranceCompany/ca-cert.pem"
+  { set +x; } 2>/dev/null
+
+  cp "${PWD}/organizations/peerOrganizations/insuranceCompany.traffic.com/msp/config.yaml" "${PWD}/organizations/peerOrganizations/insuranceCompany.traffic.com/users/User1@insuranceCompany.traffic.com/msp/config.yaml"
+
+  echo "Generating the org admin msp"
+  set -x
+  fabric-ca-client enroll -u https://insuranceCompanyadmin:insuranceCompanyadminpw@localhost:7066 --caname ca-insuranceCompany -M "${PWD}/organizations/peerOrganizations/insuranceCompany.traffic.com/users/Admin@insuranceCompany.traffic.com/msp" --tls.certfiles "${PWD}/organizations/fabric-ca/insuranceCompany/ca-cert.pem"
+  { set +x; } 2>/dev/null
+
+  cp "${PWD}/organizations/peerOrganizations/insuranceCompany.traffic.com/msp/config.yaml" "${PWD}/organizations/peerOrganizations/insuranceCompany.traffic.com/users/Admin@insuranceCompany.traffic.com/msp/config.yaml"
 }
 
 
@@ -421,7 +443,7 @@ function createOrderer() {
 }
 
 createTrafficManagement
-createInsuranceCompany
-createVehicleManufacturers
+createMVD
 createLawEnforcement
+createInsuranceCompany
 createOrderer
