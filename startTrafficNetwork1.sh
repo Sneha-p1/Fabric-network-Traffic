@@ -97,6 +97,31 @@ cd ..
 peer channel update -f ${PWD}/channel-artifacts/config_update_in_envelope.pb -c $CHANNEL_NAME -o localhost:7050  --ordererTLSHostnameOverride orderer.traffic.com --tls --cafile $ORDERER_CA
 sleep 1
 
+# echo "—---------------package chaincode—-------------"
+
+
+peer lifecycle chaincode package traffic.tar.gz --path ${PWD}/../Chaincode/TrafficChaincode --lang node --label traffic_1.0
+sleep 1
+
+
+# echo "—---------------install chaincode in manufacturer peer—-------------"
+
+peer lifecycle chaincode install traffic.tar.gz
+sleep 3
+
+peer lifecycle chaincode queryinstalled
+sleep 1
+
+export CC_PACKAGE_ID=$(peer lifecycle chaincode calculatepackageid traffic.tar.gz)
+
+# echo "—---------------Approve chaincode in manufacturer peer—-------------"
+
+peer lifecycle chaincode approveformyorg -o localhost:7050 --ordererTLSHostnameOverride orderer.traffic.com --channelID $CHANNEL_NAME --name TrafficChaincode --version 1.0  --package-id $CC_PACKAGE_ID --sequence 1 --tls --cafile $ORDERER_CA --waitForEvent
+
+
+
+sleep 1
+
 echo "—---------------Join trafficManagement peer1 to the channel—-------------"
 
 export CORE_PEER_LOCALMSPID=TrafficManagementMSP 
@@ -112,28 +137,6 @@ sleep 3
 echo "-----channel List----"
 peer channel list
 
-# echo "—---------------package chaincode—-------------"
-
-
-# cp -r ../fabric-samples/asset-transfer-basic/chaincode-javascript ../Chaincode
-
-# peer lifecycle chaincode package basic.tar.gz --path ../Chaincode/chaincode-javascript/ --lang node --label basic_1.0
-
-
-# sleep 1
-
-# export CC_PACKAGE_ID=$(peer lifecycle chaincode calculatepackageid basic.tar.gz)
-
-# echo "—---------------install chaincode in manufacturer peer—-------------"
-
-# peer lifecycle chaincode install basic.tar.gz
-# sleep 3
-
-# peer lifecycle chaincode queryinstalled
-
-# echo "—---------------Approve chaincode in manufacturer peer—-------------"
-
-# peer lifecycle chaincode approveformyorg -o localhost:7050 --ordererTLSHostnameOverride orderer.traffic.com --channelID $CHANNEL_NAME --name basic --version 1.0 --package-id $CC_PACKAGE_ID --sequence 1 --tls --cafile $ORDERER_CA --waitForEvent
 sleep 1
 
 export CORE_PEER_LOCALMSPID=MVDMSP
@@ -175,6 +178,24 @@ cd ..
 
 peer channel update -f ${PWD}/channel-artifacts/config_update_in_envelope.pb -c $CHANNEL_NAME -o localhost:7050  --ordererTLSHostnameOverride orderer.traffic.com --tls --cafile $ORDERER_CA
 peer channel getinfo -c $CHANNEL_NAME
+sleep 1
+
+# echo "—---------------install chaincode in manufacturer peer—-------------"
+
+peer lifecycle chaincode install traffic.tar.gz
+sleep 3
+
+peer lifecycle chaincode queryinstalled
+sleep 1
+
+export CC_PACKAGE_ID=$(peer lifecycle chaincode calculatepackageid traffic.tar.gz)
+
+# echo "—---------------Approve chaincode in manufacturer peer—-------------"
+
+peer lifecycle chaincode approveformyorg -o localhost:7050 --ordererTLSHostnameOverride orderer.traffic.com --channelID $CHANNEL_NAME --name TrafficChaincode --version 1.0  --package-id $CC_PACKAGE_ID --sequence 1 --tls --cafile $ORDERER_CA --waitForEvent
+
+
+
 sleep 1
 
 
@@ -219,19 +240,25 @@ cd ..
 peer channel update -f ${PWD}/channel-artifacts/config_update_in_envelope.pb -c $CHANNEL_NAME -o localhost:7050  --ordererTLSHostnameOverride orderer.traffic.com --tls --cafile $ORDERER_CA
 sleep 2
 
+# echo "—---------------install chaincode in manufacturer peer—-------------"
+
+peer lifecycle chaincode install traffic.tar.gz
+sleep 3
+
+peer lifecycle chaincode queryinstalled
+sleep 1
+
+export CC_PACKAGE_ID=$(peer lifecycle chaincode calculatepackageid traffic.tar.gz)
+
+# echo "—---------------Approve chaincode in manufacturer peer—-------------"
+
+peer lifecycle chaincode approveformyorg -o localhost:7050 --ordererTLSHostnameOverride orderer.traffic.com --channelID $CHANNEL_NAME --name TrafficChaincode --version 1.0  --package-id $CC_PACKAGE_ID --sequence 1 --tls --cafile $ORDERER_CA --waitForEvent
 
 
-# echo "—---------------install chaincode in dealer peer—-------------"
 
-# peer lifecycle chaincode install basic.tar.gz
-# sleep 3
+sleep 1
 
-# peer lifecycle chaincode queryinstalled
 
-# echo "—---------------Approve chaincode in dealer peer—-------------"
-
-# peer lifecycle chaincode approveformyorg -o localhost:7050 --ordererTLSHostnameOverride orderer.agri.com --channelID $CHANNEL_NAME --name basic --version 1.0 --package-id $CC_PACKAGE_ID --sequence 1 --tls --cafile $ORDERER_CA --waitForEvent
-# sleep 1
 
 
 export CORE_PEER_LOCALMSPID=InsuranceCompanyMSP 
@@ -273,25 +300,33 @@ cd ..
 peer channel update -f ${PWD}/channel-artifacts/config_update_in_envelope.pb -c $CHANNEL_NAME -o localhost:7050  --ordererTLSHostnameOverride orderer.traffic.com --tls --cafile $ORDERER_CA
 sleep 1
 
-# echo "—---------------install chaincode in buyer peer—-------------"
 
-# peer lifecycle chaincode install basic.tar.gz
-# sleep 3
+# echo "—---------------install chaincode in manufacturer peer—-------------"
 
-# peer lifecycle chaincode queryinstalled
+peer lifecycle chaincode install traffic.tar.gz
+sleep 3
 
-# echo "—---------------Approve chaincode in buyer peer—-------------"
+peer lifecycle chaincode queryinstalled
+sleep 1
 
-# peer lifecycle chaincode approveformyorg -o localhost:7050 --ordererTLSHostnameOverride orderer.agri.com --channelID $CHANNEL_NAME --name basic --version 1.0 --package-id $CC_PACKAGE_ID --sequence 1 --tls --cafile $ORDERER_CA --waitForEvent
-# sleep 1
+export CC_PACKAGE_ID=$(peer lifecycle chaincode calculatepackageid traffic.tar.gz)
+
+# echo "—---------------Approve chaincode in manufacturer peer—-------------"
+
+peer lifecycle chaincode approveformyorg -o localhost:7050 --ordererTLSHostnameOverride orderer.traffic.com --channelID $CHANNEL_NAME --name TrafficChaincode --version 1.0  --package-id $CC_PACKAGE_ID --sequence 1 --tls --cafile $ORDERER_CA --waitForEvent
 
 
-# echo "—---------------Commit chaincode in buyer peer—-------------"
+
+sleep 1
 
 
-# peer lifecycle chaincode checkcommitreadiness --channelID $CHANNEL_NAME --name basic --version 1.0 --sequence 1 --tls --cafile $ORDERER_CA --output json
 
-# peer lifecycle chaincode commit -o localhost:7050 --ordererTLSHostnameOverride orderer.agri.com --channelID $CHANNEL_NAME --name basic --version 1.0 --sequence 1 --tls --cafile $ORDERER_CA --peerAddresses localhost:7051 --tlsRootCertFiles $manufacturer_PEER_TLSROOTCERT --peerAddresses localhost:9051 --tlsRootCertFiles $dealer_PEER_TLSROOTCERT
-# sleep 1
 
-# peer lifecycle chaincode querycommitted --channelID $CHANNEL_NAME --name basic --cafile $ORDERER_CA
+echo "—---------------Commit chaincode in insuranceCompany peer—-------------"
+
+peer lifecycle chaincode checkcommitreadiness --channelID $CHANNEL_NAME --name TrafficChaincode --version 1.0 --sequence 1 --tls --cafile $ORDERER_CA --output json
+
+peer lifecycle chaincode commit -o localhost:7050 --ordererTLSHostnameOverride orderer.traffic.com --channelID $CHANNEL_NAME --name TrafficChaincode --version 1.0 --sequence 1 --tls --cafile $ORDERER_CA --peerAddresses localhost:7051 --tlsRootCertFiles $TRAFFICMANAGEMENT_PEER_TLSROOTCERT --peerAddresses localhost:9051 --tlsRootCertFiles $MVD_PEER_TLSROOTCERT --peerAddresses localhost:11051 --tlsRootCertFiles $LAWENFORCEMENT_PEER_TLSROOTCERT --peerAddresses localhost:7044 --tlsRootCertFiles $INSURANCECOMPANY_PEER_TLSROOTCERT
+sleep 1
+
+peer lifecycle chaincode querycommitted --channelID $CHANNEL_NAME --name TrafficChaincode --cafile $ORDERER_CA
